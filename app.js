@@ -12,15 +12,15 @@ const usersRouter = require("./routes/users");
 const path = require("path"); // Import path module to handle file paths
 
 const app = express();
-const port = process.env.PORT || 5000;
 
-//Middleware
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// **Serve static files from the 'uploads' folder**
+// Serve static files from the 'uploads' folder
 app.use("/localStorage", express.static(path.join(__dirname, "localStorage")));
 
+// MongoDB connection
 mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
@@ -36,10 +36,10 @@ app.use("/api/orders", ordersRouter);
 app.use("/api/tables", tablesRouter);
 app.use("/api/users", usersRouter);
 
+// Test route
 app.get("/", (req, res) => {
   res.send("Server is running");
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on port: ${port}`);
-});
+// Export the app for serverless deployment on Vercel
+module.exports = app;
