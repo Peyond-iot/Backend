@@ -1,18 +1,19 @@
 const MenuItem = require("../models/menuItem");
 const path = require("path");
 const fs = require("fs");
-const dir = "localStorage";
+const dir = path.join(__dirname, "localStorage"); // Use __dirname to resolve the absolute path
 
 if (!fs.existsSync(dir)) {
   fs.mkdirSync(dir); // Create directory if it doesn't exist
 }
+
 // Multer setup for image upload
 const multer = require("multer");
 
 // Storage setup for multer: define destination and file naming
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "localStorage/"); // Save files to 'localStorage' folder
+    cb(null, dir); // Save files to 'localStorage' folder
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + path.extname(file.originalname)); // e.g., '1623761881784.jpg'
@@ -132,11 +133,10 @@ exports.deleteMenuItem = async (req, res) => {
 
     // Delete associated image if exists
     if (menuItem.image) {
-      const imagePath = menuItem.image.replace(
-        `http://localhost:${process.env.PORT || 5000}/`,
-        ""
-      );
-      fs.unlinkSync(imagePath); // Delete image from local storage
+      const imagePath = path.join(__dirname, "localStorage", path.basename(menuItem.image));
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath); // Delete image from local storage
+      }
     }
 
     res.json({ message: "Menu item deleted" });
