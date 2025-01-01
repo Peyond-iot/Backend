@@ -1,41 +1,4 @@
 const MenuItem = require("../models/menuItem");
-const path = require("path");
-const fs = require("fs");
-const dir = "localStorage";
-
-if (!fs.existsSync(dir)) {
-  fs.mkdirSync(dir); // Create directory if it doesn't exist
-}
-// Multer setup for image upload
-const multer = require("multer");
-
-// Storage setup for multer: define destination and file naming
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "localStorage/"); // Save files to 'localStorage' folder
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); // e.g., '1623761881784.jpg'
-  },
-});
-
-// Set upload limits and file type restrictions
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 1000000 }, // 1MB max file size
-  fileFilter: (req, file, cb) => {
-    const filetypes = /jpeg|jpg|png/;
-    const extname = filetypes.test(
-      path.extname(file.originalname).toLowerCase()
-    );
-    const mimetype = filetypes.test(file.mimetype);
-    if (extname && mimetype) {
-      return cb(null, true);
-    } else {
-      cb(new Error("Only images (jpeg, jpg, png) are allowed"));
-    }
-  },
-});
 
 // Get all menu items
 exports.getAllMenuItems = async (req, res) => {
@@ -47,14 +10,10 @@ exports.getAllMenuItems = async (req, res) => {
   }
 };
 
-// Create a new menu item with image upload
+// Create a new menu item with an image link
 exports.createMenuItem = async (req, res) => {
   const menuItem = new MenuItem({
-    image: req.file
-      ? `http://localhost:${process.env.PORT || 5000}/localStorage/${
-          req.file.filename
-        }`
-      : req.body.image,
+    image: req.body.image, // Accept the image URL directly
     altImage: req.body.altImage,
     title: req.body.title,
     desc: req.body.desc,
@@ -88,7 +47,7 @@ exports.getMenuItemById = async (req, res) => {
   }
 };
 
-// Update a menu item (including image)
+// Update a menu item
 exports.updateMenuItem = async (req, res) => {
   try {
     const menuItem = await MenuItem.findById(req.params.id);
@@ -96,11 +55,7 @@ exports.updateMenuItem = async (req, res) => {
       return res.status(404).json({ message: "Menu item not found" });
 
     // Update fields
-    menuItem.image = req.file
-      ? `http://localhost:${process.env.PORT || 5000}/localStorage/${
-          req.file.filename
-        }`
-      : req.body.image || menuItem.image;
+    menuItem.image = req.body.image || menuItem.image;
     menuItem.altImage = req.body.altImage || menuItem.altImage;
     menuItem.title = req.body.title || menuItem.title;
     menuItem.desc = req.body.desc || menuItem.desc;
@@ -123,27 +78,15 @@ exports.updateMenuItem = async (req, res) => {
   }
 };
 
-// Delete a menu item (also delete associated image file)
+// Delete a menu item
 exports.deleteMenuItem = async (req, res) => {
   try {
     const menuItem = await MenuItem.findByIdAndDelete(req.params.id);
     if (!menuItem)
       return res.status(404).json({ message: "Menu item not found" });
 
-    // Delete associated image if exists
-    if (menuItem.image) {
-      const imagePath = menuItem.image.replace(
-        `http://localhost:${process.env.PORT || 5000}/`,
-        ""
-      );
-      fs.unlinkSync(imagePath); // Delete image from local storage
-    }
-
     res.json({ message: "Menu item deleted" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-
-// Export multer's upload method to use in routes
-exports.upload = upload;

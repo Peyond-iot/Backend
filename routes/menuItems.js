@@ -1,19 +1,18 @@
 const express = require("express");
 const router = express.Router();
 const menuItemController = require("../controllers/menuItemController");
-const upload = menuItemController.upload; // Import the upload middleware correctly
 
 // Get all menu items
 router.get("/", menuItemController.getAllMenuItems);
 
-// Create a new menu item with image upload
-router.post("/", upload.single("image"), menuItemController.createMenuItem);
+// Create a new menu item (image link provided in request body)
+router.post("/", menuItemController.createMenuItem);
 
 // Get a menu item by ID
 router.get("/:id", menuItemController.getMenuItemById);
 
-// Update a menu item by ID (with image upload)
-router.put("/:id", upload.single("image"), menuItemController.updateMenuItem);
+// Update a menu item by ID (image link provided in request body)
+router.put("/:id", menuItemController.updateMenuItem);
 
 // Delete a menu item by ID
 router.delete("/:id", menuItemController.deleteMenuItem);
