@@ -3,10 +3,7 @@ const Order = require("../models/order");
 // Get all orders
 exports.getAllOrders = async (req, res) => {
   try {
-    const orders = await Order.find()
-      .populate("tableId")
-      .populate("customerId")
-      .populate("items.menuItemId");
+    const orders = await Order.find();
     res.json(orders);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -18,9 +15,11 @@ exports.createOrder = async (req, res) => {
   const order = new Order({
     tableId: req.body.tableId,
     customerId: req.body.customerId,
-    items: req.body.items,
+    orderItems: req.body.orderItems,
+    tableNumber: req.body.tableNumber,
     totalPrice: req.body.totalPrice,
     status: req.body.status || "pending",
+    notes: req.body.notes,
     placedAt: req.body.placedAt,
     completedAt: req.body.completedAt,
   });
@@ -36,10 +35,7 @@ exports.createOrder = async (req, res) => {
 // Get an order by ID
 exports.getOrderById = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id)
-      .populate("tableId")
-      .populate("customerId")
-      .populate("items.menuItemId");
+    const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: "Order not found" });
     res.json(order);
   } catch (error) {
