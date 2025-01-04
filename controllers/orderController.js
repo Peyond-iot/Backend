@@ -1,4 +1,6 @@
+// backend/controllers/orderController.js
 const Order = require("../models/order");
+const { getSocketInstance } = require("../socket");
 
 // Get all orders
 exports.getAllOrders = async (req, res) => {
@@ -26,6 +28,14 @@ exports.createOrder = async (req, res) => {
 
   try {
     const newOrder = await order.save();
+    console.log("New order created:", newOrder); // Log the newly created order
+
+    // Emit the new order to connected clients
+    console.log("Emitting orderCreated event with newOrder:", newOrder);
+    const io = getSocketInstance();
+
+    // Emit an event to all connected clients
+    io.emit("newOrderCreated", newOrder);
     res.status(201).json(newOrder);
   } catch (error) {
     res.status(400).json({ message: error.message });
