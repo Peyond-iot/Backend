@@ -28,6 +28,14 @@ const orderSchema = new mongoose.Schema({
   notes: { type: String }, // Notes related to the order (e.g., customer preferences)
   placedAt: { type: Date, default: Date.now }, // Timestamp when the order was placed
   completedAt: { type: Date }, // Timestamp when the order was completed
+  catergory: { type: String }, // category of food
+  currency: { type: String }, // sign of money
+  price: { type: Number }, //Price of one item
+  food_type: { type: String }, //vegornonveg
+  orderNO: { type: Number },
+  food_size: { type: String }, //food portion S,M,L
+  restaurantName: { type: String },
+  updatedAt: { type: Date },
 });
 
 module.exports = mongoose.model("Order", orderSchema);
