@@ -10,32 +10,31 @@ const orderSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Customer",
   }, // Reference to the customer
+  tableNumber: { type: String, required: true }, // Table number where the order was placed
+  totalPrice: { type: Number, required: true }, // Total price of the order
+  placedAt: { type: Date, default: Date.now }, // Timestamp when the order was placed
+  completedAt: { type: Date }, // Timestamp when the order was completed
+  restaurantName: { type: String },
+  updatedAt: { type: Date },
+  currency: { type: String }, // sign of money
   orderItems: [
     {
       name: { type: String, required: true }, // Item name (e.g., Burger, Fries)
       quantity: { type: Number, required: true }, // Quantity of the item ordered
       spiceLevel: { type: String }, // Spice level for the item (e.g., Mild, Medium, Hot)
       notes: { type: String }, // Special instructions for the item (e.g., no onions)
+      status: {
+        type: String,
+        enum: ["pending", "in-preparation", "completed", "served"],
+        default: "pending",
+      }, // Track the order progress
+      catergory: { type: String }, // category of food
+      price: { type: Number }, //Price of one item
+      food_type: { type: String }, //vegornonveg
+      orderNO: { type: Number },
+      notes: { type: String }, // Notes related to the order (e.g., customer preferences)
     },
   ],
-  tableNumber: { type: String, required: true }, // Table number where the order was placed
-  totalPrice: { type: Number, required: true }, // Total price of the order
-  status: {
-    type: String,
-    enum: ["pending", "in-preparation", "completed", "served"],
-    default: "pending",
-  }, // Track the order progress
-  notes: { type: String }, // Notes related to the order (e.g., customer preferences)
-  placedAt: { type: Date, default: Date.now }, // Timestamp when the order was placed
-  completedAt: { type: Date }, // Timestamp when the order was completed
-  catergory: { type: String }, // category of food
-  currency: { type: String }, // sign of money
-  price: { type: Number }, //Price of one item
-  food_type: { type: String }, //vegornonveg
-  orderNO: { type: Number },
-  food_size: { type: String }, //food portion S,M,L
-  restaurantName: { type: String },
-  updatedAt: { type: Date },
 });
 
 module.exports = mongoose.model("Order", orderSchema);
