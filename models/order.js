@@ -17,6 +17,7 @@ const orderSchema = new mongoose.Schema({
   restaurantName: { type: String },
   updatedAt: { type: Date },
   currency: { type: String }, // sign of money
+  orderNO: { type: Number },
   orderItems: [
     {
       name: { type: String, required: true }, // Item name (e.g., Burger, Fries)
@@ -31,7 +32,6 @@ const orderSchema = new mongoose.Schema({
       catergory: { type: String }, // category of food
       price: { type: Number }, //Price of one item
       food_type: { type: String }, //vegornonveg
-      orderNO: { type: Number },
       notes: { type: String }, // Notes related to the order (e.g., customer preferences)
     },
   ],
