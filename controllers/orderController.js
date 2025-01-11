@@ -17,25 +17,25 @@ exports.createOrder = async (req, res) => {
   const order = new Order({
     tableId: req.body.tableId,
     customerId: req.body.customerId,
-    orderItems: req.body.orderItems,
     tableNumber: req.body.tableNumber,
     totalPrice: req.body.totalPrice,
-    status: req.body.status || "pending",
-    notes: req.body.notes,
-    placedAt: req.body.placedAt,
+    orderItems: req.body.orderItems,
+    placedAt: req.body.placedAt || Date.now(),
     completedAt: req.body.completedAt,
+    restaurantName: req.body.restaurantName,
+    updatedAt: req.body.updatedAt,
+    currency: req.body.currency,
+    orderNO: req.body.orderNO,
   });
 
   try {
     const newOrder = await order.save();
-    console.log("New order created:", newOrder); // Log the newly created order
+    console.log("New order created:", newOrder);
 
     // Emit the new order to connected clients
-    console.log("Emitting orderCreated event with newOrder:", newOrder);
     const io = getSocketInstance();
-
-    // Emit an event to all connected clients
     io.emit("newOrderCreated", newOrder);
+
     res.status(201).json(newOrder);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -53,12 +53,12 @@ exports.getOrderById = async (req, res) => {
   }
 };
 
-// Update an order (e.g., mark as completed)
+// Update an order
 exports.updateOrder = async (req, res) => {
   try {
     const updatedOrder = await Order.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      { ...req.body, updatedAt: Date.now() },
       { new: true }
     );
     if (!updatedOrder)
