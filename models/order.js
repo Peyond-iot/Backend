@@ -27,7 +27,7 @@ const orderSchema = new mongoose.Schema({
       status: {
         type: String,
         enum: ["pending", "in-preparation", "completed", "served"],
-        default: "pending",
+        required: true,
       }, // Track the order progress
       catergory: { type: String }, // category of food
       price: { type: Number }, //Price of one item
