@@ -4,7 +4,6 @@ const orderSchema = new mongoose.Schema({
   tableId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Table",
-    required: true,
   }, // Reference to the table
   customerId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -27,7 +26,6 @@ const orderSchema = new mongoose.Schema({
     {
       itemId: {
         type: mongoose.Schema.Types.ObjectId,
-        required: true,
       }, // Reference to the table
       name: { type: String, required: true }, // Item name (e.g., Burger, Fries)
       quantity: { type: Number, required: true }, // Quantity of the item ordered
