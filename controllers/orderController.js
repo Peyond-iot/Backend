@@ -20,6 +20,7 @@ exports.createOrder = async (req, res) => {
     tableNumber: req.body.tableNumber,
     totalPrice: req.body.totalPrice,
     orderItems: req.body.orderItems,
+    ticketStatus: req.body.ticketStatus,
     placedAt: req.body.placedAt || Date.now(),
     completedAt: req.body.completedAt,
     restaurantName: req.body.restaurantName,

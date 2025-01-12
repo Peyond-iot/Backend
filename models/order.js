@@ -18,8 +18,17 @@ const orderSchema = new mongoose.Schema({
   updatedAt: { type: Date },
   currency: { type: String }, // sign of money
   orderNO: { type: Number },
+  ticketStatus: {
+    type: String,
+    enum: ["pending", "in-preparation", "completed", "served"],
+    default: "pending",
+  }, // Track the Ticket progress
   orderItems: [
     {
+      itemId: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true,
+      }, // Reference to the table
       name: { type: String, required: true }, // Item name (e.g., Burger, Fries)
       quantity: { type: Number, required: true }, // Quantity of the item ordered
       spiceLevel: { type: String }, // Spice level for the item (e.g., Mild, Medium, Hot)
