@@ -70,6 +70,37 @@ exports.updateOrder = async (req, res) => {
   }
 };
 
+// Generalized update for a specific order item within an order
+exports.updateOrderItemById = async (req, res) => {
+  try {
+    const { itemId } = req.params; // Extract the item ID from the route params
+    const { status } = req.body; // Extract the new name from the request body
+
+    if (!status || status.trim() === "") {
+      return res.status(400).json({ message: "status is required" });
+    }
+
+    // Update the specific item in the orderItems array
+    const order = await Order.findOneAndUpdate(
+      { "orderItems.itemId": itemId }, // Match the order containing the item
+      { $set: { "orderItems.$.status": status } }, // Update the status of the matched item
+      { new: true } // Return the updated document
+    );
+
+    if (!order) {
+      return res.status(404).json({ message: "Item not found in any order" });
+    }
+
+    res.status(200).json({
+      message: "Item updated successfully",
+      updatedOrder: order,
+    });
+  } catch (error) {
+    console.error("Error updating item:", error);
+    res.status(500).json({ message: "Internal server error", error });
+  }
+};
+
 // Delete an order
 exports.deleteOrder = async (req, res) => {
   try {
