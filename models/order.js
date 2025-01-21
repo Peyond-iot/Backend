@@ -24,9 +24,7 @@ const orderSchema = new mongoose.Schema({
   }, // Track the Ticket progress
   orderItems: [
     {
-      itemId: {
-        type: mongoose.Schema.Types.ObjectId,
-      }, // Reference to the table
+      itemId: { type: String }, // Reference to the table
       name: { type: String, required: true }, // Item name (e.g., Burger, Fries)
       quantity: { type: Number, required: true }, // Quantity of the item ordered
       spiceLevel: { type: String }, // Spice level for the item (e.g., Mild, Medium, Hot)

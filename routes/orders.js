@@ -14,8 +14,8 @@ router.get("/:id", orderController.getOrderById);
 // Update an order by ID (e.g., mark as completed)
 router.put("/:id", orderController.updateOrder);
 
-// Update a route for updating a specific order item
-router.put("/ordersItems/:id", orderController.updateOrderItemById);
+// Update a route for updating a specific order item i.e status of the order item
+router.put("/:orderId/orderItems/:itemId", orderController.updateOrderItemStatus);
 
 // Delete an order by ID
 router.delete("/:id", orderController.deleteOrder);

@@ -71,33 +71,41 @@ exports.updateOrder = async (req, res) => {
 };
 
 // Generalized update for a specific order item within an order
-exports.updateOrderItemById = async (req, res) => {
+// Update order item status
+exports.updateOrderItemStatus = async (req, res) => {
   try {
-    const { itemId } = req.params; // Extract the item ID from the route params
-    const { status } = req.body; // Extract the new name from the request body
+    const { orderId, itemId } = req.params;
+    const { status } = req.body;
 
-    if (!status || status.trim() === "") {
-      return res.status(400).json({ message: "status is required" });
+    // Validate status
+    const validStatuses = ["pending", "in-preparation", "completed", "served"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: "Invalid status value" });
     }
 
-    // Update the specific item in the orderItems array
+    // Find and update the specific order item
     const order = await Order.findOneAndUpdate(
-      { "orderItems.itemId": itemId }, // Match the order containing the item
-      { $set: { "orderItems.$.status": status } }, // Update the status of the matched item
-      { new: true } // Return the updated document
+      {
+        _id: orderId,
+        "orderItems._id": itemId,
+      },
+      {
+        $set: {
+          "orderItems.$.status": status,
+          updatedAt: new Date(),
+        },
+      },
+      { new: true }
     );
 
     if (!order) {
-      return res.status(404).json({ message: "Item not found in any order" });
+      return res.status(404).json({ error: "Order or item not found" });
     }
 
-    res.status(200).json({
-      message: "Item updated successfully",
-      updatedOrder: order,
-    });
+    res.status(200).json(order);
   } catch (error) {
-    console.error("Error updating item:", error);
-    res.status(500).json({ message: "Internal server error", error });
+    console.error("Error updating order item status:", error);
+    res.status(500).json({ error: "Failed to update order item status" });
   }
 };
 
