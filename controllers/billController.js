@@ -3,53 +3,89 @@ const Order = require("../models/order");
 
 exports.createBill = async (req, res) => {
   try {
-    const { orderId, paymentMethod, notes } = req.body;
+    const { tableId, paymentMethod, notes } = req.body;
 
-    // Fetch order details with populated menuItemId to get the name of each item
-    const order = await Order.findById(orderId).populate("items.menuItemId"); // Populate menuItemId
-    console.log(order);
-    if (!order) return res.status(404).json({ message: "Order not found" });
+    if (!tableId) {
+      return res.status(400).json({ message: "Table ID is required" });
+    }
 
-    const { tableId, items, totalPrice, discount, restaurantId, customerId } =
-      order;
+    // Fetch all unpaid orders for the table
+    const orders = await Order.find({
+      tableId,
+      paymentStatus: "pending",
+    }).populate("items.menuItemId");
 
-    // Modify the items to include the name field from the populated menuItemId
-    const updatedItems = items.map((item) => ({
-      menuItemId: item.menuItemId._id, // Use the menuItemId (ObjectId)
-      quantity: item.quantity,
-      price: item.price,
-      total: item.total,
-      name: item.menuItemId.name, // Add the name from the populated MenuItem
-    }));
+    if (orders.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No unpaid orders found for this table" });
+    }
 
-    // Define tax and service charge (Modify these as per your restaurant policy)
-    const tax = totalPrice * 0.1; // 10% tax
-    const serviceCharge = totalPrice * 0.05; // 5% service charge
+    let mergedItems = [];
+    let subtotal = 0;
+    let discount = 0;
+    const restaurantId = orders[0].restaurantId;
+    const customerId = orders[0].customerId || null;
 
-    // Calculate final amount
-    const finalAmount = totalPrice + tax + serviceCharge - discount;
+    // Merge items and calculate total
+    orders.forEach((order) => {
+      order.items.forEach((item) => {
+        const existingItem = mergedItems.find((i) =>
+          i.menuItemId.equals(item.menuItemId._id)
+        );
 
-    // Create new Bill with updated items
+        if (existingItem) {
+          existingItem.quantity += item.quantity;
+          existingItem.total += item.total;
+        } else {
+          mergedItems.push({
+            menuItemId: item.menuItemId._id,
+            quantity: item.quantity,
+            price: item.price,
+            total: item.total,
+            name: item.menuItemId.name, // Include item name
+          });
+        }
+      });
+
+      subtotal += order.totalPrice;
+      discount += order.discount;
+    });
+
+    // Define tax and service charge (Modify as per your policy)
+    const tax = subtotal * 0.1; // 10% tax
+    const serviceCharge = subtotal * 0.05; // 5% service charge
+    const totalAmount = subtotal + tax + serviceCharge - discount;
+
+    // Create merged bill without payment details
     const newBill = new Bill({
       restaurantId,
       customerId,
       tableId,
-      items: updatedItems, // Include updated items with the name field
-      subtotal: totalPrice,
+      items: mergedItems,
+      subtotal,
       tax,
       serviceCharge,
       discount,
-      totalAmount: finalAmount,
-      paymentStatus: "pending",
-      paymentMethod,
-      notes,
+      totalAmount,
+      paymentStatus: "pending", // Payment will be decided later
+      paymentMethod: paymentMethod || null, // Optional
+      notes: notes || null, // Optional
     });
 
     await newBill.save();
+
+    // Mark all orders as billed
+    await Order.updateMany(
+      { tableId, paymentStatus: "pending" },
+      { paymentStatus: "paid" }
+    );
+
     res
       .status(201)
-      .json({ message: "Bill generated successfully", bill: newBill });
+      .json({ message: "Merged bill generated successfully", bill: newBill });
   } catch (error) {
+    console.error(error); // For better error debugging
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
