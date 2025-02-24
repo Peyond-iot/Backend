@@ -73,17 +73,10 @@ exports.createBill = async (req, res) => {
 
     await newBill.save();
 
-    // Mark all orders as billed for the specific table and restaurant
-    await Order.updateMany(
-      { tableId, paymentStatus: "pending", restaurantId },
-      { paymentStatus: "paid" }
-    );
-
     res
       .status(201)
       .json({ message: "Merged bill generated successfully", bill: newBill });
   } catch (error) {
-    console.error(error); // For better error debugging
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
