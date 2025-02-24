@@ -1,45 +1,107 @@
 const mongoose = require("mongoose");
 
-const orderSchema = new mongoose.Schema({
-  tableId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Table",
-  }, // Reference to the table
-  customerId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Customer",
-  }, // Reference to the customer
-  tableNumber: { type: String, required: true }, // Table number where the order was placed
-  totalPrice: { type: Number, required: true }, // Total price of the order
-  placedAt: { type: Date, default: Date.now }, // Timestamp when the order was placed
-  completedAt: { type: Date }, // Timestamp when the order was completed
-  restaurantName: { type: String },
-  updatedAt: { type: Date },
-  currency: { type: String }, // sign of money
-  orderNO: { type: Number },
-  ticketStatus: {
-    type: String,
-    enum: ["pending", "in-preparation", "completed", "served"],
-    default: "pending",
-  }, // Track the Ticket progress
-  orderItems: [
-    {
-      itemId: { type: String }, // Reference to the table
-      name: { type: String, required: true }, // Item name (e.g., Burger, Fries)
-      quantity: { type: Number, required: true }, // Quantity of the item ordered
-      spiceLevel: { type: String }, // Spice level for the item (e.g., Mild, Medium, Hot)
-      notes: { type: String }, // Special instructions for the item (e.g., no onions)
-      status: {
-        type: String,
-        enum: ["pending", "in-preparation", "completed", "served"],
-        default: "pending",
-      }, // Track the order progress
-      catergory: { type: String }, // category of food
-      price: { type: Number }, //Price of one item
-      food_type: { type: String }, //vegornonveg
-      notes: { type: String }, // Notes related to the order (e.g., customer preferences)
+const OrderSchema = new mongoose.Schema(
+  {
+    // Reference to the restaurant
+    restaurantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Restaurant",
+      required: true,
     },
-  ],
-});
 
-module.exports = mongoose.model("Order", orderSchema);
+    // Reference to the customer who placed the order (can be null for staff orders)
+    customerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer",
+      required: false,
+    },
+
+    // Table number or ID associated with the order
+    tableId: {
+      type: String,
+      required: true,
+    },
+
+    // List of menu items ordered
+    items: [
+      {
+        menuItemId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "MenuItem",
+          required: true,
+        },
+        quantity: {
+          type: Number,
+          required: true,
+        },
+        price: {
+          type: Number,
+          required: true,
+        },
+        total: {
+          type: Number,
+          required: true,
+        },
+      },
+    ],
+
+    // Order status (e.g., pending, prepared, delivered)
+    status: {
+      type: String,
+      enum: ["pending", "in-progress", "prepared", "delivered", "cancelled"],
+      default: "pending",
+    },
+
+    // Time when the order was placed
+    orderTime: {
+      type: Date,
+      default: Date.now,
+    },
+
+    // Time when the order was marked as prepared
+    preparedTime: {
+      type: Date,
+      required: false,
+    },
+
+    // Time when the order was delivered
+    deliveredTime: {
+      type: Date,
+      required: false,
+    },
+
+    // Total price of the order
+    totalPrice: {
+      type: Number,
+      required: true,
+    },
+
+    // Payment status (e.g., pending, paid)
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "paid"],
+      default: "pending",
+    },
+
+    // Discount applied to the order (if any)
+    discount: {
+      type: Number,
+      default: 0,
+    },
+
+    // Special notes or instructions for the order
+    notes: {
+      type: String,
+      default: "",
+    },
+  },
+  { timestamps: true }
+);
+
+// Order model export
+//module.exports = mongoose.model("Order", OrderSchema);
+
+// ✅ Fix: Prevent model overwrite error
+const Order = mongoose.models.Order || mongoose.model("Order", OrderSchema);
+
+module.exports = Order;

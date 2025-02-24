@@ -1,121 +1,133 @@
-// backend/controllers/orderController.js
 const Order = require("../models/order");
-const { getSocketInstance } = require("../socket");
+const MenuItem = require("../models/menuItem"); // Import MenuItem for price validation
+const mongoose = require("mongoose");
 
-// Get all orders
-exports.getAllOrders = async (req, res) => {
-  try {
-    const orders = await Order.find();
-    res.json(orders);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Create a new order
+// Create Order
 exports.createOrder = async (req, res) => {
-  const order = new Order({
-    tableId: req.body.tableId,
-    customerId: req.body.customerId,
-    tableNumber: req.body.tableNumber,
-    totalPrice: req.body.totalPrice,
-    orderItems: req.body.orderItems,
-    ticketStatus: req.body.ticketStatus,
-    placedAt: req.body.placedAt || Date.now(),
-    completedAt: req.body.completedAt,
-    restaurantName: req.body.restaurantName,
-    updatedAt: req.body.updatedAt,
-    currency: req.body.currency,
-    orderNO: req.body.orderNO,
-  });
-
   try {
-    const newOrder = await order.save();
-    console.log("New order created:", newOrder);
+    const { restaurantId, customerId, tableId, items, discount, notes } =
+      req.body;
 
-    // Emit the new order to connected clients
-    const io = getSocketInstance();
-    io.emit("newOrderCreated", newOrder);
+    if (!tableId || !items || items.length === 0) {
+      return res.status(400).json({ message: "Missing required fields." });
+    }
 
-    res.status(201).json(newOrder);
+    // Calculate total price of the order
+    let totalPrice = 0;
+    for (const item of items) {
+      const menuItem = await MenuItem.findById(item.menuItemId);
+      if (!menuItem) {
+        return res
+          .status(400)
+          .json({ message: `Menu item not found: ${item.menuItemId}` });
+      }
+
+      // Calculate total for this item
+      item.price = menuItem.price; // Ensure the price is the latest price from MenuItem
+      item.total = item.quantity * item.price;
+      totalPrice += item.total;
+    }
+
+    // Apply discount if any
+    totalPrice -= discount || 0;
+
+    const newOrder = new Order({
+      restaurantId: req.user.restaurantId,
+      customerId: customerId || null, // Can be null for staff orders
+      tableId,
+      items,
+      totalPrice,
+      discount,
+      notes,
+    });
+
+    await newOrder.save();
+    return res
+      .status(201)
+      .json({ message: "Order created successfully", order: newOrder });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("Error creating order:", error);
+    return res
+      .status(500)
+      .json({ message: "Server error while creating order." });
   }
 };
 
-// Get an order by ID
+// Get all orders (can filter by restaurantId if needed)
+exports.getOrders = async (req, res) => {
+  try {
+    const restaurantId = req.user.restaurantId; // Assuming the restaurantId is available in the user object
+    console.log(restaurantId);
+    const orders = await Order.find({ restaurantId })
+      .populate("items.menuItemId")
+      .sort({ orderTime: -1 });
+    console.log(orders);
+    return res.json(orders);
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    return res
+      .status(500)
+      .json({ message: "Server error while fetching orders." });
+  }
+};
+
+// Get Order by ID
 exports.getOrderById = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ message: "Order not found" });
-    res.json(order);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Update an order
-exports.updateOrder = async (req, res) => {
-  try {
-    const updatedOrder = await Order.findByIdAndUpdate(
-      req.params.id,
-      { ...req.body, updatedAt: Date.now() },
-      { new: true }
-    );
-    if (!updatedOrder)
-      return res.status(404).json({ message: "Order not found" });
-    res.json(updatedOrder);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-// Generalized update for a specific order item within an order
-// Update order item status
-exports.updateOrderItemStatus = async (req, res) => {
-  try {
-    const { orderId, itemId } = req.params;
-    const { status } = req.body;
-
-    // Validate status
-    const validStatuses = ["pending", "in-preparation", "completed", "served"];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ error: "Invalid status value" });
-    }
-
-    // Find and update the specific order item
-    const order = await Order.findOneAndUpdate(
-      {
-        _id: orderId,
-        "orderItems._id": itemId,
-      },
-      {
-        $set: {
-          "orderItems.$.status": status,
-          updatedAt: new Date(),
-        },
-      },
-      { new: true }
-    );
+    const orderId = req.params.id;
+    const order = await Order.findById(orderId).populate("items.menuItemId");
 
     if (!order) {
-      return res.status(404).json({ error: "Order or item not found" });
+      return res.status(404).json({ message: "Order not found." });
     }
 
-    res.status(200).json(order);
+    return res.json(order);
   } catch (error) {
-    console.error("Error updating order item status:", error);
-    res.status(500).json({ error: "Failed to update order item status" });
+    console.error("Error fetching order:", error);
+    return res
+      .status(500)
+      .json({ message: "Server error while fetching order." });
   }
 };
 
-// Delete an order
-exports.deleteOrder = async (req, res) => {
+// Update Order Status (e.g., prepared, delivered)
+exports.updateOrderStatus = async (req, res) => {
   try {
-    const order = await Order.findByIdAndDelete(req.params.id);
-    if (!order) return res.status(404).json({ message: "Order not found" });
-    res.json({ message: "Order deleted" });
+    const orderId = req.params.id;
+    const { status } = req.body;
+
+    // Ensure status is valid
+    const validStatuses = [
+      "pending",
+      "in-progress",
+      "prepared",
+      "delivered",
+      "cancelled",
+    ];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid status." });
+    }
+
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found." });
+    }
+
+    // Update status and the appropriate timestamp
+    order.status = status;
+    if (status === "prepared") {
+      order.preparedTime = new Date();
+    } else if (status === "delivered") {
+      order.deliveredTime = new Date();
+    }
+
+    await order.save();
+    return res.json({ message: "Order status updated successfully", order });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error updating order status:", error);
+    return res
+      .status(500)
+      .json({ message: "Server error while updating order status." });
   }
 };

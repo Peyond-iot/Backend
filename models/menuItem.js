@@ -1,75 +1,39 @@
 const mongoose = require("mongoose");
 
-const menuItemSchema = new mongoose.Schema(
+const MenuItemSchema = new mongoose.Schema(
   {
-    image: {
+    name: { type: String, required: true }, // Name of the menu item
+    title: { type: String, required: true }, // Title of the item
+    desc: { type: String, required: true }, // Description of the item
+    category: { type: String, required: true }, // Category (e.g., Beverages, Main Course)
+    type: { type: String, required: true, enum: ["veg", "non-veg"] }, // Veg/Non-Veg
+    price: { type: Number, required: true }, // Price of the item
+    currency: { type: String, required: true, default: "रु." }, // Currency (default रु.)
+    size: {
       type: String,
-      required: false,
-      default: "",
-    },
-    altImage: {
-      type: String,
+      enum: ["small", "medium", "large"],
+      default: "medium",
+    }, // Size options
+    rating: { type: Number, default: 0 }, // Rating (optional)
+    spicy_prefer: { type: Boolean, default: false }, // Spice preference
+    disclaimer: { type: String, default: "" }, // Disclaimer message
+    available: { type: Boolean, default: true }, // Availability status
+    restaurantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Restaurant",
       required: true,
-    },
-    title: {
-      type: String,
-      required: true,
-    },
-    desc: {
-      type: String,
-      required: true,
-    },
-    category: {
-      type: String,
-      required: true,
-    },
-    type: {
-      type: String,
-      required: true,
-      enum: ["veg", "non-veg"],
-    },
-    disclaimer: {
-      type: String,
-      required: false,
-      default: "",
-    },
-    rating: {
-      type: Number,
-      required: false,
-      default: 0,
-    },
-    price: {
-      type: Number,
-      required: true,
-    },
-    currency: {
-      type: String,
-      required: true,
-      default: "रु.",
-    },
+    }, // Reference to restaurant
+    image: { type: String, default: "" }, // Main image URL
+    altImage: { type: String, required: true }, // Alternative image URL
     imageSlider: [
       {
-        src: {
-          type: String,
-          required: false,
-        },
-        id: {
-          type: String,
-          required: false,
-        },
-        alt: {
-          type: String,
-          required: false,
-        },
+        src: { type: String },
+        id: { type: String },
+        alt: { type: String },
       },
-    ],
-    spicy_prefer: {
-      type: Boolean,
-      required: true,
-      default: false,
-    },
+    ], // Array of images for a slider
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("MenuItem", menuItemSchema);
+module.exports = mongoose.model("MenuItem", MenuItemSchema);
