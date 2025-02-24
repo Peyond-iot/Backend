@@ -3,16 +3,19 @@ const Order = require("../models/order");
 
 exports.createBill = async (req, res) => {
   try {
-    const { tableId, paymentMethod, notes } = req.body;
-
-    if (!tableId) {
-      return res.status(400).json({ message: "Table ID is required" });
+    const { tableId } = req.body; // Ensure both tableId and restaurantId are passed
+    const restaurantId = req.user.restaurantId; // Ensure the user is associated with a restaurant
+    if (!tableId || !restaurantId) {
+      return res
+        .status(400)
+        .json({ message: "Table ID and Restaurant ID are required" });
     }
 
-    // Fetch all unpaid orders for the table
+    // Fetch all unpaid orders for the specific table and restaurant
     const orders = await Order.find({
       tableId,
       paymentStatus: "pending",
+      restaurantId, // Ensure only orders from the correct restaurant are included
     }).populate("items.menuItemId");
 
     if (orders.length === 0) {
@@ -24,8 +27,6 @@ exports.createBill = async (req, res) => {
     let mergedItems = [];
     let subtotal = 0;
     let discount = 0;
-    const restaurantId = orders[0].restaurantId;
-    const customerId = orders[0].customerId || null;
 
     // Merge items and calculate total
     orders.forEach((order) => {
@@ -60,7 +61,6 @@ exports.createBill = async (req, res) => {
     // Create merged bill without payment details
     const newBill = new Bill({
       restaurantId,
-      customerId,
       tableId,
       items: mergedItems,
       subtotal,
@@ -69,15 +69,13 @@ exports.createBill = async (req, res) => {
       discount,
       totalAmount,
       paymentStatus: "pending", // Payment will be decided later
-      paymentMethod: paymentMethod || null, // Optional
-      notes: notes || null, // Optional
     });
 
     await newBill.save();
 
-    // Mark all orders as billed
+    // Mark all orders as billed for the specific table and restaurant
     await Order.updateMany(
-      { tableId, paymentStatus: "pending" },
+      { tableId, paymentStatus: "pending", restaurantId },
       { paymentStatus: "paid" }
     );
 
