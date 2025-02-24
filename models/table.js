@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const TableSchema = new mongoose.Schema({
-  tableNumber: { type: Number, required: true, unique: true }, // Unique Table Number
+  tableNumber: { type: Number, required: true },
   restaurantId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Restaurant",

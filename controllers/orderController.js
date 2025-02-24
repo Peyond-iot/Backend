@@ -1,41 +1,62 @@
+const Table = require("../models/table");
+const MenuItem = require("../models/menuItem");
 const Order = require("../models/order");
-const MenuItem = require("../models/menuItem"); // Import MenuItem for price validation
-const mongoose = require("mongoose");
 
 // Create Order
 exports.createOrder = async (req, res) => {
   try {
-    const { restaurantId, customerId, tableId, items, discount, notes } =
-      req.body;
+    const { customerId, tableId, items, discount, notes } = req.body;
+    const restaurantId = req.user.restaurantId; // Ensure the user is associated with a restaurant
 
     if (!tableId || !items || items.length === 0) {
       return res.status(400).json({ message: "Missing required fields." });
     }
 
-    // Calculate total price of the order
-    let totalPrice = 0;
-    for (const item of items) {
-      const menuItem = await MenuItem.findById(item.menuItemId);
-      if (!menuItem) {
-        return res
-          .status(400)
-          .json({ message: `Menu item not found: ${item.menuItemId}` });
-      }
-
-      // Calculate total for this item
-      item.price = menuItem.price; // Ensure the price is the latest price from MenuItem
-      item.total = item.quantity * item.price;
-      totalPrice += item.total;
+    // ✅ Step 1: Validate that the table belongs to the restaurant
+    const table = await Table.findOne({ _id: tableId, restaurantId });
+    if (!table) {
+      return res
+        .status(400)
+        .json({ message: "Invalid table for this restaurant." });
     }
 
-    // Apply discount if any
+    // ✅ Step 2: Validate all menu items belong to the restaurant
+    const menuItemIds = items.map((item) => item.menuItemId);
+    const validMenuItems = await MenuItem.find({
+      _id: { $in: menuItemIds },
+      restaurantId,
+    });
+
+    if (validMenuItems.length !== items.length) {
+      return res.status(400).json({
+        message: "One or more menu items do not belong to this restaurant.",
+      });
+    }
+
+    // ✅ Step 3: Calculate total price of the order
+    let totalPrice = 0;
+    const updatedItems = items.map((item) => {
+      const menuItem = validMenuItems.find(
+        (menu) => menu._id.toString() === item.menuItemId
+      );
+      if (!menuItem) {
+        throw new Error(`Invalid menu item: ${item.menuItemId}`);
+      }
+      const price = menuItem.price; // Ensure price comes from the database
+      const total = item.quantity * price;
+      totalPrice += total;
+      return { ...item, price, total };
+    });
+
+    // ✅ Step 4: Apply discount if any
     totalPrice -= discount || 0;
 
+    // ✅ Step 5: Create the order
     const newOrder = new Order({
-      restaurantId: req.user.restaurantId,
+      restaurantId,
       customerId: customerId || null, // Can be null for staff orders
       tableId,
-      items,
+      items: updatedItems,
       totalPrice,
       discount,
       notes,
