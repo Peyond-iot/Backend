@@ -32,7 +32,7 @@ exports.createOrder = async (req, res) => {
     totalPrice -= discount || 0;
 
     const newOrder = new Order({
-      restaurantId,
+      restaurantId: req.user.restaurantId,
       customerId: customerId || null, // Can be null for staff orders
       tableId,
       items,
