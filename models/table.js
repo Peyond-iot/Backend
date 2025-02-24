@@ -1,19 +1,24 @@
 const mongoose = require("mongoose");
 
-const tableSchema = new mongoose.Schema({
-  tableNumber: {
-    type: Number,
+const TableSchema = new mongoose.Schema({
+  tableNumber: { type: Number, required: true, unique: true }, // Unique Table Number
+  restaurantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Restaurant",
     required: true,
-    unique: true,
-  }, // Table ID that customers scan
-  capacity: {
-    type: Number,
-    required: true,
-  }, // How many people can sit at the table
-  currentOrder: {
+  }, // Link to Restaurant
+  currentOrderId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Order",
-  }, // Current active order (if any)
+    default: null,
+  }, // Ongoing order (if any)
+  status: {
+    type: String,
+    enum: ["available", "occupied", "reserved"],
+    default: "available",
+  }, // Table status
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
 });
 
-module.exports = mongoose.model("Table", tableSchema);
+module.exports = mongoose.model("Table", TableSchema);

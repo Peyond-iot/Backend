@@ -5,11 +5,17 @@ const cors = require("cors");
 require("dotenv").config();
 const path = require("path");
 
-const customersRouter = require("./routes/customers");
-const menuItemsRouter = require("./routes/menuItems");
-const ordersRouter = require("./routes/orders");
-const tablesRouter = require("./routes/tables");
-const usersRouter = require("./routes/users");
+// Import routes
+// const analyticsRoutes = require("./routes/analyticsRoutes");
+const billRoutes = require("./routes/billRoutes");
+const menuItemRoutes = require("./routes/menuItemRoutes");
+const orderRoutes = require("./routes/orderRoutes");
+const orderHistoryRoutes = require("./routes/orderHistoryRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
+const restaurantRoutes = require("./routes/restaurantRoutes");
+// const staffRoutes = require("./routes/staffRoutes");
+const tableRoutes = require("./routes/tableRoutes");
+const userRoutes = require("./routes/userRoutes");
 
 const { initSocket } = require("./socket"); // Import the initSocket function
 
@@ -40,11 +46,16 @@ mongoose
   });
 
 // Routes
-app.use("/api/customers", customersRouter);
-app.use("/api/menuItems", menuItemsRouter);
-app.use("/api/orders", ordersRouter);
-app.use("/api/tables", tablesRouter);
-app.use("/api/users", usersRouter);
+// app.use("/api/analytics",analyticsRoutes);
+app.use("/api/bills", billRoutes);
+app.use("/api/menu-items", menuItemRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/order-history", orderHistoryRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/restaurants", restaurantRoutes);
+// app.use("/api/staff", staffRoutes);
+app.use("/api/tables", tableRoutes);
+app.use("/api/users", userRoutes);
 
 // Root route
 app.get("/", (req, res) => {
