@@ -1,7 +1,11 @@
 const Order = require("../models/order");
 const MenuItem = require("../models/menuItem"); // Import MenuItem for price validation
 const mongoose = require("mongoose");
+const MenuItem = require("../models/menuItem"); // Import MenuItem for price validation
+const mongoose = require("mongoose");
 
+// Create Order
+exports.createOrder = async (req, res) => {
 // Create Order
 exports.createOrder = async (req, res) => {
   try {
@@ -50,9 +54,23 @@ exports.createOrder = async (req, res) => {
     return res
       .status(500)
       .json({ message: "Server error while creating order." });
+    console.error("Error creating order:", error);
+    return res
+      .status(500)
+      .json({ message: "Server error while creating order." });
   }
 };
 
+// Get all orders (can filter by restaurantId if needed)
+exports.getOrders = async (req, res) => {
+  try {
+    const restaurantId = req.user.restaurantId; // Assuming the restaurantId is available in the user object
+    console.log(restaurantId);
+    const orders = await Order.find({ restaurantId })
+      .populate("items.menuItemId")
+      .sort({ orderTime: -1 });
+    console.log(orders);
+    return res.json(orders);
 // Get all orders (can filter by restaurantId if needed)
 exports.getOrders = async (req, res) => {
   try {
@@ -68,12 +86,25 @@ exports.getOrders = async (req, res) => {
     return res
       .status(500)
       .json({ message: "Server error while fetching orders." });
+    console.error("Error fetching orders:", error);
+    return res
+      .status(500)
+      .json({ message: "Server error while fetching orders." });
   }
 };
 
 // Get Order by ID
+// Get Order by ID
 exports.getOrderById = async (req, res) => {
   try {
+    const orderId = req.params.id;
+    const order = await Order.findById(orderId).populate("items.menuItemId");
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found." });
+    }
+
+    return res.json(order);
     const orderId = req.params.id;
     const order = await Order.findById(orderId).populate("items.menuItemId");
 
@@ -87,12 +118,19 @@ exports.getOrderById = async (req, res) => {
     return res
       .status(500)
       .json({ message: "Server error while fetching order." });
+    console.error("Error fetching order:", error);
+    return res
+      .status(500)
+      .json({ message: "Server error while fetching order." });
   }
 };
 
 // Update Order Status (e.g., prepared, delivered)
 exports.updateOrderStatus = async (req, res) => {
+// Update Order Status (e.g., prepared, delivered)
+exports.updateOrderStatus = async (req, res) => {
   try {
+    const orderId = req.params.id;
     const orderId = req.params.id;
     const { status } = req.body;
 
@@ -104,13 +142,24 @@ exports.updateOrderStatus = async (req, res) => {
       "delivered",
       "cancelled",
     ];
+    // Ensure status is valid
+    const validStatuses = [
+      "pending",
+      "in-progress",
+      "prepared",
+      "delivered",
+      "cancelled",
+    ];
     if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid status." });
       return res.status(400).json({ message: "Invalid status." });
     }
 
     const order = await Order.findById(orderId);
+    const order = await Order.findById(orderId);
 
     if (!order) {
+      return res.status(404).json({ message: "Order not found." });
       return res.status(404).json({ message: "Order not found." });
     }
 
@@ -124,7 +173,21 @@ exports.updateOrderStatus = async (req, res) => {
 
     await order.save();
     return res.json({ message: "Order status updated successfully", order });
+    // Update status and the appropriate timestamp
+    order.status = status;
+    if (status === "prepared") {
+      order.preparedTime = new Date();
+    } else if (status === "delivered") {
+      order.deliveredTime = new Date();
+    }
+
+    await order.save();
+    return res.json({ message: "Order status updated successfully", order });
   } catch (error) {
+    console.error("Error updating order status:", error);
+    return res
+      .status(500)
+      .json({ message: "Server error while updating order status." });
     console.error("Error updating order status:", error);
     return res
       .status(500)
