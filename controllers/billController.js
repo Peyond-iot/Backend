@@ -10,6 +10,19 @@ exports.createBill = async (req, res) => {
         .status(400)
         .json({ message: "Table ID and Restaurant ID are required" });
     }
+    // Check if an unpaid bill already exists for this table
+    let existingBill = await Bill.findOne({
+      tableId,
+      restaurantId,
+      paymentStatus: "pending",
+    });
+
+    if (existingBill) {
+      return res.status(200).json({
+        message: "Bill already exists",
+        bill: existingBill,
+      });
+    }
 
     // Fetch all unpaid orders for the specific table and restaurant
     const orders = await Order.find({
