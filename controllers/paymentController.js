@@ -1,50 +1,58 @@
 const Payment = require("../models/payment");
 const Bill = require("../models/bill");
 
-// Create Payment
+
+// Create Payment (Supports Partial Payments)
 exports.createPayment = async (req, res) => {
   try {
     const { billId, amountPaid, paymentMethod, transactionId } = req.body;
 
-    // Check if all required fields are provided
+    // Validate request
     if (!billId || !amountPaid || !paymentMethod) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // Find the bill and check if the total amount is covered
+    // Find the bill
     const bill = await Bill.findById(billId);
     if (!bill) {
       return res.status(404).json({ message: "Bill not found" });
     }
 
-    // Check if the amount paid is greater than or equal to the total amount of the bill
-    if (amountPaid < bill.totalAmount) {
-      return res
-        .status(400)
-        .json({ message: "Amount paid is less than the total bill" });
+    // Calculate remaining amount
+    const remainingAmount = bill.totalAmount - bill.paidAmount;
+
+    // Check if amount paid exceeds the remaining amount
+    if (amountPaid > remainingAmount) {
+      return res.status(400).json({
+        message: `Amount exceeds remaining balance. Remaining: ${remainingAmount}`,
+      });
     }
 
-    // Create the payment
+    // Create a payment entry
     const payment = new Payment({
       billId,
       amountPaid,
       paymentMethod,
       transactionId,
-      paymentStatus: amountPaid >= bill.totalAmount ? "completed" : "pending",
+      paymentStatus: "completed", // Each payment is marked as completed individually
     });
 
-    // Save the payment to the database
     await payment.save();
 
-    // Update the bill status to "paid" if the amount paid is equal to or greater than the total
-    if (amountPaid >= bill.totalAmount) {
+    // Update the bill's paidAmount
+    bill.paidAmount += amountPaid;
+
+    // If the full amount is paid, update status to "paid"
+    if (bill.paidAmount >= bill.totalAmount) {
       bill.paymentStatus = "paid";
-      await bill.save();
     }
+
+    await bill.save();
 
     res.status(201).json({
       message: "Payment recorded successfully",
-      payment,
+      remainingAmount: bill.totalAmount - bill.paidAmount,
+      bill,
     });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });

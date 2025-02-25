@@ -18,6 +18,7 @@ const BillSchema = new mongoose.Schema(
         name: { type: String, required: true },
         price: { type: Number, required: true },
         quantity: { type: Number, required: true },
+        total: { type: Number, required: true },
       },
     ],
     subtotal: { type: Number, required: true },
@@ -25,6 +26,7 @@ const BillSchema = new mongoose.Schema(
     serviceCharge: { type: Number, required: true },
     discount: { type: Number, required: true, default: 0 },
     totalAmount: { type: Number, required: true },
+    paidAmount: { type: Number, default: 0 }, // Track amount paid
     paymentStatus: {
       type: String,
       enum: ["pending", "paid"],
