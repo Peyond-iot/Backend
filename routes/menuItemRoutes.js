@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const upload = require("../middlewares/upload");
 const menuItemController = require("../controllers/menuItemController");
 const {
   authenticateToken,
@@ -11,6 +12,11 @@ router.post(
   "/",
   authenticateToken,
   checkRole(["restaurant_admin"]),
+  upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "altImage", maxCount: 1 },
+    { name: "imageSlider", maxCount: 5 },
+  ]),
   menuItemController.createMenuItem
 );
 

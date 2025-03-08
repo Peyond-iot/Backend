@@ -21,6 +21,16 @@ exports.createMenuItem = async (req, res) => {
       imageSlider,
     } = req.body;
 
+    const imageUrl = req.files?.image?.[0]?.path || ""; // ✅ Correct way to access uploaded file
+    const altImageUrl = req.files?.altImage?.[0]?.path || "";
+
+    const imageSliderUrls =
+      req.files?.imageSlider?.map((file) => ({
+        src: file.path,
+        id: file.filename,
+        alt: `Image ${file.filename}`,
+      })) || [];
+
     const menuItem = new MenuItem({
       name,
       title,
@@ -34,9 +44,9 @@ exports.createMenuItem = async (req, res) => {
       spicy_prefer,
       disclaimer,
       available,
-      altImage,
-      image,
-      imageSlider,
+      altImage: altImageUrl,
+      image: imageUrl,
+      imageSlider: imageSliderUrls,
       restaurantId: req.user.restaurantId, // Ensure menu item is linked to the restaurant
     });
 
