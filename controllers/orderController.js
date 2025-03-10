@@ -1,6 +1,7 @@
 const Table = require("../models/table");
 const MenuItem = require("../models/menuItem");
 const Order = require("../models/order");
+const mongoose = require("mongoose");
 
 // Create Order
 exports.createOrder = async (req, res) => {
@@ -108,6 +109,42 @@ exports.getOrderById = async (req, res) => {
     return res
       .status(500)
       .json({ message: "Server error while fetching order." });
+  }
+};
+
+// Get Orders by Table ID
+// Get orders for a specific table (filtered by tableId and restaurantId)
+exports.getOrdersByTableId = async (req, res) => {
+  try {
+    const restaurantId = req.user.restaurantId; // Get restaurantId from the user object
+    const { tableId } = req.params; // Get tableId from the route params
+    console.log(
+      `Fetching orders for Table ID: ${tableId}, Restaurant ID: ${restaurantId}`
+    );
+
+    // Check if the tableId is valid
+    if (!mongoose.Types.ObjectId.isValid(tableId)) {
+      return res.status(400).json({ message: "Invalid Table ID" });
+    }
+
+    // Find orders for the specific tableId and restaurantId
+    const orders = await Order.find({ tableId, restaurantId })
+      .populate("items.menuItemId") // Populate the menu items
+      .sort({ orderTime: -1 }); // Sort by order time, descending (latest orders first)
+
+    if (!orders.length) {
+      return res
+        .status(404)
+        .json({ message: "No orders found for this table" });
+    }
+
+    console.log(orders); // Log the orders for debugging
+    return res.json(orders); // Send the found orders as response
+  } catch (error) {
+    console.error("Error fetching orders by tableId:", error);
+    return res
+      .status(500)
+      .json({ message: "Server error while fetching orders." });
   }
 };
 

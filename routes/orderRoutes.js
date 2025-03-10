@@ -30,6 +30,14 @@ router.get(
   orderController.getOrderById
 );
 
+// Route to get orders by table ID
+router.get(
+  "/table/:tableId",
+  authenticateToken,
+  checkRole(["restaurant_admin", "staff"]), // Check if the user is admin or staff
+  orderController.getOrdersByTableId
+);
+
 // Route to update the order status
 router.patch(
   "/:id/status",
