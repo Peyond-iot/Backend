@@ -1,6 +1,6 @@
 const Payment = require("../models/payment");
 const Bill = require("../models/bill");
-
+const Table = require("../models/table");
 
 // Create Payment (Supports Partial Payments)
 exports.createPayment = async (req, res) => {
@@ -48,6 +48,16 @@ exports.createPayment = async (req, res) => {
     }
 
     await bill.save();
+
+    // ✅ Step: After payment, update table status to "available"
+    const table = await Table.findOne({ _id: bill.tableId });
+
+    if (table) {
+      // Set table status to "available" after payment is completed
+      table.status = "available";
+      table.currentOrderId = null; // Clear the current order ID as payment is complete
+      await table.save();
+    }
 
     res.status(201).json({
       message: "Payment recorded successfully",
