@@ -64,6 +64,12 @@ exports.createOrder = async (req, res) => {
     });
 
     await newOrder.save();
+
+    // ✅ Step 6: Update table status to 'occupied' and assign current order ID
+    table.status = "occupied"; // Change table status to 'occupied'
+    table.currentOrderId = newOrder._id; // Link the order to the table
+    await table.save(); // Save updated table
+
     return res
       .status(201)
       .json({ message: "Order created successfully", order: newOrder });
