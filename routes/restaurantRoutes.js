@@ -26,7 +26,7 @@ router.get(
 router.get(
   "/:id",
   authenticateToken,
-  checkRole(["saas_admin"]),
+  checkRole(["saas_admin", "restaurant_admin", "staff"]),
   restaurantController.getRestaurantById
 );
 
