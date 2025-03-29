@@ -16,6 +16,7 @@ const restaurantRoutes = require("./routes/restaurantRoutes");
 // const staffRoutes = require("./routes/staffRoutes");
 const tableRoutes = require("./routes/tableRoutes");
 const userRoutes = require("./routes/userRoutes");
+const printRoutes = require("./routes/printRoutes");
 
 const { initSocket } = require("./socket"); // Import the initSocket function
 
@@ -56,6 +57,7 @@ app.use("/api/restaurants", restaurantRoutes);
 // app.use("/api/staff", staffRoutes);
 app.use("/api/tables", tableRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/print", printRoutes); // Register the print route
 
 // Root route
 app.get("/", (req, res) => {
